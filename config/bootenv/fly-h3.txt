@@ -1,0 +1,9 @@
+# FLY H3 Board - Armbian Environment Configuration
+verbosity=1
+bootlogo=false
+console=serial
+disp_mode=1920x1080p60
+overlay_prefix=sun8i-h3
+rootdev=UUID=
+rootfstype=ext4
+usbstoragequirks=0x2537:0x1066:u,0x2537:0x1068:u
