@@ -224,10 +224,16 @@ function produce_relaunch_parameters() {
 function cli_standard_relaunch_docker_or_sudo() {
 	display_alert "Gonna relaunch" "EUID: ${EUID} -- PREFER_DOCKER:${PREFER_DOCKER}" "debug"
 	if [[ "${EUID}" == "0" ]]; then # we're already root. Either running as real root, or already sudo'ed.
-		if [[ "${ARMBIAN_RELAUNCHED}" != "yes" && "${ALLOW_ROOT}" != "yes" ]]; then
-			display_alert "PROBLEM: don't run ./compile.sh as root or with sudo" "PROBLEM: don't run ./compile.sh as root or with sudo" "err"
-			if [[ -t 0 ]]; then # so... non-interactive builds *can* run as root. It's not supported, you'll get an error, but we'll proceed.
-				exit_if_countdown_not_aborted 10 "directly called as root"
+		# Allow root in containers (LXC, Docker, etc.) automatically
+		if armbian_is_running_in_container; then
+			display_alert "Running as root in container" "Allowing root access for container build" "info"
+		else
+			# Only check ALLOW_ROOT for non-container environments
+			if [[ "${ARMBIAN_RELAUNCHED}" != "yes" && "${ALLOW_ROOT}" != "yes" ]]; then
+				display_alert "PROBLEM: don't run ./compile.sh as root or with sudo" "PROBLEM: don't run ./compile.sh as root or with sudo" "err"
+				if [[ -t 0 ]]; then # so... non-interactive builds *can* run as root. It's not supported, you'll get an error, but we'll proceed.
+					exit_if_countdown_not_aborted 10 "directly called as root"
+				fi
 			fi
 		fi
 		display_alert "Already running as root" "great, running '${ARMBIAN_COMMAND}' normally" "debug"

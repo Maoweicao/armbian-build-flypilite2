@@ -11,8 +11,15 @@
 # check_loop_device <device_node>
 #
 function check_loop_device() {
-	do_with_retries 5 check_loop_device_internal "${@}" || {
-		exit_with_error "Device node ${device} does not exist after 5 tries."
+	local device="${1}"
+	# For container environments, increase retry count for partition nodes
+	local retry_count=5
+	if [[ $CONTAINER_COMPAT == yes && "${device}" =~ p[0-9]+$ ]]; then
+		retry_count=15  # More retries for partition nodes in containers
+		display_alert "Container detected with partition device" "${device} - increasing retry count to ${retry_count}" "debug"
+	fi
+	do_with_retries "${retry_count}" check_loop_device_internal "${@}" || {
+		exit_with_error "Device node ${device} does not exist after ${retry_count} tries."
 	}
 	return 0 # shortcircuit above
 }
@@ -32,7 +39,7 @@ function check_loop_device_internal() {
 		else
 			display_alert "Device node does not exist yet" "${device}" "debug"
 			run_host_command_logged ls -la "${device}" || true
-			run_host_command_logged lsblk || true
+			run_host_command_logged lsblk -d -n -o NAME,SIZE,TYPE 2>/dev/null || run_host_command_logged lsblk || true
 			run_host_command_logged blkid || true
 			return 1
 		fi
@@ -45,7 +52,7 @@ function check_loop_device_internal() {
 		display_alert "Device node size" "${device}: ${device_size}" "debug"
 		if [[ ${device_size} -eq 0 ]]; then
 			run_host_command_logged ls -la "${device}"
-			run_host_command_logged lsblk
+			run_host_command_logged lsblk -d -n -o NAME,SIZE,TYPE 2>/dev/null || run_host_command_logged lsblk || true
 			run_host_command_logged blkid
 			# only break on the first 3 iteractions. then give up; let it try to use the device...
 			if [[ ${RETRY_RUNS} -lt 4 ]]; then
@@ -101,6 +108,54 @@ function write_uboot_to_loop_image() {
 
 	done_with_temp_dir "${cleanup_id}" # changes cwd to "${SRC}" and fires the cleanup function early
 
+	return 0
+}
+
+# Handle loop device partitions in containers with automatic detection and retry logic
+# This function attempts to create missing partition device nodes if they don't exist
+function ensure_loop_partition_device_nodes() {
+	local loop_device="${1}"
+	
+	# Only apply to containers
+	[[ $CONTAINER_COMPAT != yes ]] && return 0
+	
+	display_alert "Ensuring partition nodes for loop device" "${loop_device}" "debug"
+	
+	# Check if main loop device exists
+	if [[ ! -b "${loop_device}" ]]; then
+		display_alert "Main loop device does not exist" "${loop_device}" "debug"
+		return 1
+	fi
+	
+	# Try to create missing partition nodes from /tmp/dev
+	local tmp_device="/tmp/${loop_device}"
+	if [[ -b "${tmp_device}" ]]; then
+		# Get the major and minor numbers from the real device
+		local major minor
+		major=$(stat -c '%t' "${tmp_device}" 2>/dev/null)
+		minor=$(stat -c '%T' "${tmp_device}" 2>/dev/null)
+		
+		if [[ -n "${major}" && -n "${minor}" ]]; then
+			# Ensure base loop device node exists
+			[[ ! -b "${loop_device}" ]] && mknod -m0660 "${loop_device}" b "0x${major}" "0x${minor}" 2>/dev/null || true
+			
+			# Try to find and create partition nodes
+			local partition_idx
+			for partition_idx in 1 2 3 4 5 6 7 8; do
+				local partition_device="${loop_device}p${partition_idx}"
+				local tmp_partition="/tmp/${partition_device}"
+				
+				if [[ -b "${tmp_partition}" ]] && [[ ! -b "${partition_device}" ]]; then
+					display_alert "Creating missing partition node" "${partition_device}" "debug"
+					local p_major p_minor
+					p_major=$(stat -c '%t' "${tmp_partition}" 2>/dev/null)
+					p_minor=$(stat -c '%T' "${tmp_partition}" 2>/dev/null)
+					mknod -m0660 "${partition_device}" b "0x${p_major}" "0x${p_minor}" 2>/dev/null || true
+				fi
+			done
+		fi
+	fi
+	
 	return 0
 }
 

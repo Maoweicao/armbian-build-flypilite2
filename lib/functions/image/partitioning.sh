@@ -280,6 +280,9 @@ function prepare_partitions() {
 	display_alert "Running partprobe" "${LOOP}" "debug"
 	run_host_command_logged partprobe "${LOOP}"
 
+	# Ensure partition nodes are available in containers
+	ensure_loop_partition_device_nodes "${LOOP}"
+
 	display_alert "Checking again after partprobe" "${LOOP}" "debug"
 	check_loop_device "${LOOP}" # check again, now it has to have a size! otherwise wait.
 
@@ -300,6 +303,8 @@ function prepare_partitions() {
 			At this stage ${rootdevice} has been defined pointing to a loop device partition. Extensions that map the root device must update rootdevice accordingly.
 		PREPARE_ROOT_DEVICE
 
+		# Ensure partition node exists before checking
+		ensure_loop_partition_device_nodes "${LOOP}"
 		check_loop_device "$rootdevice"
 		display_alert "Creating rootfs" "$ROOTFS_TYPE on $rootdevice"
 		run_host_command_logged mkfs.${mkfs[$ROOTFS_TYPE]} ${mkopts[$ROOTFS_TYPE]} ${mkopts_label[$ROOTFS_TYPE]:+${mkopts_label[$ROOTFS_TYPE]}"$ROOT_FS_LABEL"} "${rootdevice}"
