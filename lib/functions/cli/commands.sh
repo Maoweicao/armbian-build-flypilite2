@@ -19,6 +19,7 @@ function armbian_register_commands() {
 		["dockershell"]="docker"
 		["generate-dockerfile"]="docker"
 
+		["clean"]="clean" # implemented in cli_clean_pre_run and cli_clean_run
 		["requirements"]="requirements" # implemented in cli_requirements_pre_run and cli_requirements_run
 
 		# Given a board/config/exts, dump out the (non-userspace) JSON of configuration
