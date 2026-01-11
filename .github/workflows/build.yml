@@ -1,0 +1,31 @@
+name: Build Multiple Armbian Images
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - board: fly-h3
+            branch: current
+            release: noble
+          - board: fly-h3
+            branch: current
+            release: trixie
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Compile Armbian
+      run: |
+        git clone --depth=1 https://github.com/Maoweicao/armbian-build-flypilite2.git build
+        cd build
+        ./compile.sh \
+          BOARD=${{ matrix.board }} \
+          BRANCH=${{ matrix.branch }} \
+          RELEASE=${{ matrix.release }} \
+          BUILD_MINIMAL=no \
+          KERNEL_CONFIGURE=no
