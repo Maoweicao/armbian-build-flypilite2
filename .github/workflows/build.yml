@@ -93,6 +93,7 @@ jobs:
             BRANCH="${{ steps.vars.outputs.branch }}" \
             RELEASE="${{ steps.vars.outputs.release }}" \
             BUILD_MINIMAL=no \
+            BUILD_DESKTOP=no \
             KERNEL_CONFIGURE=no
 
       - name: Find built images
