@@ -89,7 +89,6 @@ jobs:
         id: compile
         run: |
           ./compile.sh \
-            docker \
             BOARD="${{ steps.vars.outputs.board }}" \
             BRANCH="${{ steps.vars.outputs.branch }}" \
             RELEASE="${{ steps.vars.outputs.release }}" \
