@@ -12,6 +12,11 @@ KERNEL_TARGET="current,edge"
 KERNEL_TEST_TARGET="current"
 FORCE_BOOTSCRIPT_UPDATE="yes"
 BOOT_FDT_FILE="sun50i-h618-fly-h618.dtb"
+SERIALCON="ttyS0"
+HAS_VIDEO_OUTPUT="no"
+DEFAULT_CONSOLE="serial"
+MODULES_BLACKLIST="ac200"
+DEFAULT_OVERLAYS="uart2-ph uart5-ph"
 
 function post_family_tweaks_bsp__fly-h618() {
 	local overlay_src="${SRC}/overlay/sun50i-h618"
