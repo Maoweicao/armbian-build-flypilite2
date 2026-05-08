@@ -28,6 +28,7 @@ on:
         type: choice
         options:
           - fly-h3
+          - fly-h618
           - orangepizero3
           - orangepizero2w
           - longanpi-3h
@@ -63,6 +64,9 @@ jobs:
           - board: fly-h3
             branch: current
             release: trixie
+          - board: fly-h618
+            branch: current
+            release: noble
 
     steps:
       - name: Checkout build framework
