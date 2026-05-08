@@ -533,7 +533,7 @@ function docker_cli_prepare_launch() {
 	loop_over_armbian_mountpoints prepare_docker_args_for_mountpoint
 
 	# @TODO: auto-compute this list; just get the dirs and filter some out?
-	for MOUNT_DIR in "lib" "config" "extensions" "packages" "patch" "tools" "userpatches"; do
+	for MOUNT_DIR in "lib" "config" "extensions" "packages" "patch" "tools" "userpatches" "overlay"; do
 		mkdir -p "${SRC}/${MOUNT_DIR}"
 		DOCKER_ARGS+=("--mount" "type=bind,source=${SRC}/${MOUNT_DIR},target=${DOCKER_ARMBIAN_TARGET_PATH}/${MOUNT_DIR}")
 	done
