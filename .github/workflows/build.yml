@@ -67,6 +67,9 @@ jobs:
           - board: fly-h618
             branch: current
             release: noble
+          - board: fly-h618
+            branch: current
+            release: trixie
 
     steps:
       - name: Checkout build framework
