@@ -14,42 +14,26 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'config/boards/fly-h3.*'
+      - 'config/boards/fly-*.*'
       - 'config/kernel/**'
-      - 'config/bootenv/fly-h3.txt'
+      - 'config/bootenv/fly-*.txt'
       - 'overlay/sun8i-h3/**'
+      - 'overlay/sun50i-h618/**'
       - 'patch/kernel/archive/sunxi-*/**'
   workflow_dispatch:
     inputs:
       board:
-        description: 'Board to build'
+        description: 'Board to build (leave empty to build all)'
         required: false
-        default: 'fly-h3'
+        default: ''
         type: choice
         options:
+          - ''
           - fly-h3
           - fly-h618
           - orangepizero3
           - orangepizero2w
           - longanpi-3h
-      release:
-        description: 'Ubuntu/Debian release'
-        required: false
-        default: 'noble'
-        type: choice
-        options:
-          - noble
-          - trixie
-          - bookworm
-          - oracular
-      branch:
-        description: 'Kernel branch'
-        required: false
-        default: 'current'
-        type: choice
-        options:
-          - current
-          - edge
 
 jobs:
   build:
@@ -77,38 +61,27 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set board variables
-        id: vars
-        run: |
-          BOARD='${{ matrix.board }}'
-          RELEASE='${{ matrix.release }}'
-          BRANCH='${{ matrix.branch }}'
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            BOARD='${{ github.event.inputs.board }}'
-            RELEASE='${{ github.event.inputs.release }}'
-            BRANCH='${{ github.event.inputs.branch }}'
-          fi
-          echo "board=${BOARD}" >> $GITHUB_OUTPUT
-          echo "release=${RELEASE}" >> $GITHUB_OUTPUT
-          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
-
       - name: Set up QEMU binfmt
         uses: docker/setup-qemu-action@v3
 
       - name: Compile Armbian image
+        if: |
+          github.event_name != 'workflow_dispatch' ||
+          github.event.inputs.board == '' ||
+          matrix.board == github.event.inputs.board
         id: compile
         run: |
           ./compile.sh \
-            BOARD="${{ steps.vars.outputs.board }}" \
-            BRANCH="${{ steps.vars.outputs.branch }}" \
-            RELEASE="${{ steps.vars.outputs.release }}" \
+            BOARD="${{ matrix.board }}" \
+            BRANCH="${{ matrix.branch }}" \
+            RELEASE="${{ matrix.release }}" \
             BUILD_MINIMAL=no \
             BUILD_DESKTOP=no \
             KERNEL_CONFIGURE=no
 
       - name: Find built images
+        if: success() && steps.compile.outcome != 'skipped'
         id: find
-        if: success()
         run: |
           IMG_DIR="output/images"
           IMAGES=$(find "$IMG_DIR" -type f \
@@ -125,7 +98,7 @@ jobs:
         if: steps.find.outputs.images != ''
         uses: actions/upload-artifact@v4
         with:
-          name: armbian-${{ steps.vars.outputs.board }}-${{ steps.vars.outputs.release }}
+          name: armbian-${{ matrix.board }}-${{ matrix.release }}
           path: output/images/
           retention-days: 7
 
@@ -134,12 +107,12 @@ jobs:
         run: |
           mkdir -p output/checksums
           cd output/images
-          sha256sum *.{img,img.xz,img.gz} 2>/dev/null > ../checksums/${{ steps.vars.outputs.board }}-${{ steps.vars.outputs.release }}.sha256sum || true
+          sha256sum *.{img,img.xz,img.gz} 2>/dev/null > ../checksums/${{ matrix.board }}-${{ matrix.release }}.sha256sum || true
 
       - name: Upload checksum artifacts
         if: steps.find.outputs.images != ''
         uses: actions/upload-artifact@v4
         with:
-          name: armbian-${{ steps.vars.outputs.board }}-${{ steps.vars.outputs.release }}-checksums
+          name: armbian-${{ matrix.board }}-${{ matrix.release }}-checksums
           path: output/checksums/
           retention-days: 7
