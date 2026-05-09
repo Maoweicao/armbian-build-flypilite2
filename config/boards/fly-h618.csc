@@ -16,7 +16,6 @@ SERIALCON="ttyS0"
 HAS_VIDEO_OUTPUT="no"
 DEFAULT_CONSOLE="serial"
 MODULES_BLACKLIST="ac200"
-DEFAULT_OVERLAYS="uart2-ph uart5-ph"
 
 function family_tweaks_s__disable_networkd_wait_online__fly-h618() {
 	# Mask networkd-wait-online to prevent boot hang on boards without Ethernet
