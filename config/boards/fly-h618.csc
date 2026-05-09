@@ -17,7 +17,7 @@ HAS_VIDEO_OUTPUT="no"
 DEFAULT_CONSOLE="serial"
 MODULES_BLACKLIST="ac200"
 
-function family_tweaks_s__disable_networkd_wait_online__fly-h618() {
+function post_family_tweaks__mask_networkd_wait_online__fly-h618() {
 	# Mask networkd-wait-online to prevent boot hang on boards without Ethernet
 	if [[ -f "${SDCARD}/lib/systemd/system/systemd-networkd-wait-online.service" ]]; then
 		display_alert "${BOARD}" "Masking systemd-networkd-wait-online to prevent boot hang" "info"
