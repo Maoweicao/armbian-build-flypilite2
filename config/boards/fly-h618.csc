@@ -18,6 +18,14 @@ DEFAULT_CONSOLE="serial"
 MODULES_BLACKLIST="ac200"
 DEFAULT_OVERLAYS="uart2-ph uart5-ph"
 
+function family_tweaks_s__disable_networkd_wait_online__fly-h618() {
+	# Mask networkd-wait-online to prevent boot hang on boards without Ethernet
+	if [[ -f "${SDCARD}/lib/systemd/system/systemd-networkd-wait-online.service" ]]; then
+		display_alert "${BOARD}" "Masking systemd-networkd-wait-online to prevent boot hang" "info"
+		chroot "${SDCARD}" /bin/bash -c "systemctl mask systemd-networkd-wait-online.service >/dev/null 2>&1" || true
+	fi
+}
+
 function post_family_tweaks_bsp__fly-h618() {
 	local overlay_src="${SRC}/overlay/sun50i-h618"
 	local overlay_dst="${destination}${OVERLAY_DIR:-/boot/dtb/allwinner/overlay}"
