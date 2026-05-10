@@ -1,2 +1,3 @@
 verbosity=1
 console=serial
+extraargs=thermal.off=1

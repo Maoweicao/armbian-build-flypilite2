@@ -45,12 +45,6 @@ jobs:
           - board: fly-h618
             branch: legacy
             release: trixie
-          - board: fly-h618
-            branch: current
-            release: trixie
-          - board: fly-h618
-            branch: edge
-            release: trixie
 
     steps:
       - name: Checkout build framework
