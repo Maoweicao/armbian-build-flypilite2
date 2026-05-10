@@ -2924,7 +2924,7 @@ new file mode 100644
 index 000000000000..111111111111
 --- /dev/null
 +++ b/drivers/net/ethernet/allwinner/sunxi_gmac_ops.c
-@@ -0,0 +1,796 @@
+@@ -0,0 +1,794 @@
 +/*
 + * linux/drivers/net/ethernet/allwinner/sunxi_gmac_ops.c
 + *
