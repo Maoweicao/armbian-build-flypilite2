@@ -42,17 +42,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - board: fly-h3
-            branch: current
-            release: noble
-          - board: fly-h3
-            branch: current
+          - board: fly-h618
+            branch: legacy
             release: trixie
           - board: fly-h618
             branch: current
-            release: noble
+            release: trixie
           - board: fly-h618
-            branch: current
+            branch: edge
             release: trixie
 
     steps:
