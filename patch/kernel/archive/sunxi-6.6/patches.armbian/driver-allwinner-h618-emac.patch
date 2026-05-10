@@ -434,7 +434,7 @@ new file mode 100644
 index 000000000000..d31b86fc1e8c
 --- /dev/null
 +++ b/drivers/net/ethernet/allwinner/sunxi-gmac.c
-@@ -0,0 +1,2217 @@
+@@ -0,0 +1,2225 @@
 +/*
 + * linux/drivers/net/ethernet/allwinner/sunxi_gmac.c
 + *
@@ -1125,8 +1125,16 @@ index 000000000000..d31b86fc1e8c
 +    }
 +
 +    phy_write(phydev, MII_BMCR, BMCR_RESET);
-+    while (BMCR_RESET & phy_read(phydev, MII_BMCR))
-+        msleep(30);
++    {
++        int bmcr_retries = 100; /* max 3s (100 * 30ms) */
++        int bmcr_val;
++        while (bmcr_retries-- > 0) {
++            bmcr_val = phy_read(phydev, MII_BMCR);
++            if (bmcr_val < 0 || !(bmcr_val & BMCR_RESET))
++                break;
++            msleep(30);
++        }
++    }
 +
 +    value = phy_read(phydev, MII_BMCR);
 +    phy_write(phydev, MII_BMCR, (value & ~BMCR_PDOWN));
