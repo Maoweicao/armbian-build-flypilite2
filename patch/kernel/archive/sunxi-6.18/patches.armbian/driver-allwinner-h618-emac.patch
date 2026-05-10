@@ -982,9 +982,7 @@ index 000000000000..111111111111
 +    struct net_device *ndev = bus->priv;
 +    struct geth_priv *priv = netdev_priv(ndev);
 +
-+    sunxi_mdio_write(priv->base, phyaddr, phyreg, data);
-+
-+    return 0;
++    return sunxi_mdio_write(priv->base, phyaddr, phyreg, data);
 +}
 +
 +static int geth_mdio_reset(struct mii_bus *bus)
@@ -3092,6 +3090,7 @@ index 000000000000..111111111111
 +int sunxi_mdio_read(void *iobase, int phyaddr, int phyreg)
 +{
 +	unsigned int value = 0;
++	int timeout;
 +
 +	/* Mask the MDC_DIV_RATIO */
 +	value |= ((hwdev.mdc_div & 0x07) << 20);
@@ -3099,12 +3098,24 @@ index 000000000000..111111111111
 +			((phyreg << 4) & (0x000007F0)) |
 +			MII_BUSY);
 +
-+	while (((readl(iobase + GETH_MDIO_ADDR)) & MII_BUSY) == 1)
-+		;
++	timeout = 10000;
++	while (((readl(iobase + GETH_MDIO_ADDR)) & MII_BUSY) == 1) {
++		if (--timeout == 0) {
++			pr_warn("sunxi_gmac: MDIO read timeout (pre-write)\n");
++			return -ETIMEDOUT;
++		}
++		udelay(10);
++	}
 +
 +	writel(value, iobase + GETH_MDIO_ADDR);
-+	while (((readl(iobase + GETH_MDIO_ADDR)) & MII_BUSY) == 1)
-+		;
++	timeout = 10000;
++	while (((readl(iobase + GETH_MDIO_ADDR)) & MII_BUSY) == 1) {
++		if (--timeout == 0) {
++			pr_warn("sunxi_gmac: MDIO read timeout (post-write)\n");
++			return -ETIMEDOUT;
++		}
++		udelay(10);
++	}
 +
 +	return (int)readl(iobase + GETH_MDIO_DATA);
 +}
@@ -3112,6 +3123,7 @@ index 000000000000..111111111111
 +int sunxi_mdio_write(void *iobase, int phyaddr, int phyreg, unsigned short data)
 +{
 +	unsigned int value;
++	int timeout;
 +
 +	value = ((0x07 << 20) & readl(iobase + GETH_MDIO_ADDR)) |
 +		 (hwdev.mdc_div << 20);
@@ -3120,16 +3132,28 @@ index 000000000000..111111111111
 +		  MII_WRITE | MII_BUSY;
 +
 +	/* Wait until any existing MII operation is complete */
-+	while (((readl(iobase + GETH_MDIO_ADDR)) & MII_BUSY) == 1)
-+		;
++	timeout = 10000;
++	while (((readl(iobase + GETH_MDIO_ADDR)) & MII_BUSY) == 1) {
++		if (--timeout == 0) {
++			pr_warn("sunxi_gmac: MDIO write timeout (pre-write)\n");
++			return -ETIMEDOUT;
++		}
++		udelay(10);
++	}
 +
 +	/* Set the MII address register to write */
 +	writel(data, iobase + GETH_MDIO_DATA);
 +	writel(value, iobase + GETH_MDIO_ADDR);
 +
 +	/* Wait until any existing MII operation is complete */
-+	while (((readl(iobase + GETH_MDIO_ADDR)) & MII_BUSY) == 1)
-+		;
++	timeout = 10000;
++	while (((readl(iobase + GETH_MDIO_ADDR)) & MII_BUSY) == 1) {
++		if (--timeout == 0) {
++			pr_warn("sunxi_gmac: MDIO write timeout (post-write)\n");
++			return -ETIMEDOUT;
++		}
++		udelay(10);
++	}
 +
 +	return 0;
 +}
