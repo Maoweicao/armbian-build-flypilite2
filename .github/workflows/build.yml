@@ -15,6 +15,7 @@ on:
     branches: [main]
     paths:
       - 'config/boards/fly-*.*'
+      - 'config/boards/orangepizero3.csc'
       - 'config/kernel/**'
       - 'config/bootenv/fly-*.txt'
       - 'overlay/sun8i-h3/**'
@@ -44,6 +45,9 @@ jobs:
         include:
           - board: fly-h618
             branch: legacy
+            release: trixie
+          - board: orangepizero3
+            branch: current
             release: trixie
 
     steps:
