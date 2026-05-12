@@ -7,9 +7,13 @@ on:
       - '**.md'
       - '.github/**'
       - '!config/boards/fly-h3.*'
+      - '!config/boards/fly-h618.csc'
+      - '!config/boards/orangepizero3.csc'
       - '!config/kernel/**'
       - '!config/bootenv/fly-h3.txt'
+      - '!config/bootenv/fly-h618.txt'
       - '!overlay/sun8i-h3/**'
+      - '!overlay/sun50i-h618/**'
       - '!patch/kernel/archive/sunxi-*/**'
   pull_request:
     branches: [main]
@@ -46,8 +50,14 @@ jobs:
           - board: fly-h618
             branch: legacy
             release: trixie
-          - board: orangepizero3
+          - board: fly-h618
             branch: current
+            release: trixie
+          - board: fly-h618
+            branch: edge
+            release: trixie
+          - board: orangepizero3
+            branch: legacy
             release: trixie
 
     steps:

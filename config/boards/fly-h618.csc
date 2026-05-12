@@ -50,6 +50,14 @@ function post_family_tweaks_bsp__fly-h618() {
 		display_alert "${BOARD}" "Overlay source missing: ${overlay_src}" "warn"
 	fi
 
+	# The boot script looks for ${overlay_prefix}-fixup.scr (sun50i-h618-fixup.scr),
+	# but the kernel DTB package only ships sun50i-h616-fixup.scr because H618 reuses
+	# the H616 overlay namespace in the kernel tree. Create a symlink so the boot
+	# script can find and apply the DT fixup (critical for USB/PHY/peripheral DT patches).
+	display_alert "${BOARD}" "Creating sun50i-h618-fixup.scr -> sun50i-h616-fixup.scr symlink" "info"
+	mkdir -p "${overlay_dst}"
+	ln -sf sun50i-h616-fixup.scr "${overlay_dst}/sun50i-h618-fixup.scr"
+
 	if [[ -f "${base_dtb_src}" ]]; then
 		display_alert "${BOARD}" "Installing board DTB ${BOOT_FDT_FILE}" "info"
 		mkdir -p "${overlay_root}"
