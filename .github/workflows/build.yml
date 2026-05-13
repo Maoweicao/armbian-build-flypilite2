@@ -103,7 +103,7 @@ jobs:
         if: steps.find.outputs.images != ''
         uses: actions/upload-artifact@v4
         with:
-          name: armbian-${{ matrix.board }}-${{ matrix.release }}
+          name: armbian-${{ matrix.board }}-${{ matrix.branch }}-${{ matrix.release }}
           path: output/images/
           retention-days: 7
 
@@ -118,6 +118,6 @@ jobs:
         if: steps.find.outputs.images != ''
         uses: actions/upload-artifact@v4
         with:
-          name: armbian-${{ matrix.board }}-${{ matrix.release }}-checksums
+          name: armbian-${{ matrix.board }}-${{ matrix.branch }}-${{ matrix.release }}-checksums
           path: output/checksums/
           retention-days: 7
