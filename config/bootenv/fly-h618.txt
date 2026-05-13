@@ -1,4 +1,3 @@
 verbosity=7
 console=serial
-bootlogo=true
-extraargs=systemd.log_level=debug systemd.log_target=console
+extraargs=plymouth.enable=0
