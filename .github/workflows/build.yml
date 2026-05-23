@@ -48,16 +48,13 @@ jobs:
       matrix:
         include:
           - board: fly-h618
-            branch: legacy
-            release: trixie
-          - board: fly-h618
             branch: current
             release: trixie
           - board: fly-h618
             branch: edge
             release: trixie
           - board: orangepizero3
-            branch: legacy
+            branch: current
             release: trixie
 
     steps:

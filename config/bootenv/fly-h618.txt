@@ -1,3 +1,3 @@
-verbosity=7
+verbosity=1
 console=serial
-extraargs=plymouth.enable=0 earlycon=uart8250,mmio32,0x5000000 systemd.log_level=debug systemd.log_target=console
+extraargs=plymouth.enable=0 earlycon=uart8250,mmio32,0x5000000
