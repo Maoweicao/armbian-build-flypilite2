@@ -215,6 +215,7 @@
 	soc {
 		pwm5: pwm5@0300a000 {
 			compatible = "allwinner,sunxi-pwm5";
+			#pwm-cells = <3>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pwm5_pin>;
 			clk_bypass_output = <0x1>;

@@ -8,7 +8,6 @@ on:
       - '.github/**'
       - '!config/boards/fly-h3.*'
       - '!config/boards/fly-h618.csc'
-      - '!config/boards/orangepizero3.csc'
       - '!config/kernel/**'
       - '!config/bootenv/fly-h3.txt'
       - '!config/bootenv/fly-h618.txt'
@@ -19,7 +18,6 @@ on:
     branches: [main]
     paths:
       - 'config/boards/fly-*.*'
-      - 'config/boards/orangepizero3.csc'
       - 'config/kernel/**'
       - 'config/bootenv/fly-*.txt'
       - 'overlay/sun8i-h3/**'
@@ -47,14 +45,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - board: fly-h618
+          - board: fly-h3
             branch: current
+            release: trixie
+          - board: fly-h3
+            branch: edge
             release: trixie
           - board: fly-h618
             branch: edge
-            release: trixie
-          - board: orangepizero3
-            branch: current
             release: trixie
 
     steps:
