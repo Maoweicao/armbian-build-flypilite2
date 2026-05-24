@@ -32,6 +32,7 @@ DEFAULT_CONSOLE="serial"
 MODULES_BLACKLIST=""
 
 enable_extension "uwe5622-allwinner"
+enable_extension "preset-firstrun"
 
 function post_family_tweaks_bsp__fly-h618() {
 	local overlay_src="${SRC}/overlay/sun50i-h618"
