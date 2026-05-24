@@ -34,9 +34,6 @@ on:
           - ''
           - fly-h3
           - fly-h618
-          - orangepizero3
-          - orangepizero2w
-          - longanpi-3h
 
 jobs:
   build:
@@ -47,12 +44,27 @@ jobs:
         include:
           - board: fly-h3
             branch: current
+            variant: wizard
+            release: trixie
+          - board: fly-h3
+            branch: current
+            variant: preset
             release: trixie
           - board: fly-h3
             branch: edge
+            variant: wizard
+            release: trixie
+          - board: fly-h3
+            branch: edge
+            variant: preset
             release: trixie
           - board: fly-h618
             branch: edge
+            variant: wizard
+            release: trixie
+          - board: fly-h618
+            branch: edge
+            variant: preset
             release: trixie
 
     steps:
@@ -63,6 +75,12 @@ jobs:
 
       - name: Set up QEMU binfmt
         uses: docker/setup-qemu-action@v3
+
+      - name: Enable preset-firstrun (preset variant only)
+        if: matrix.variant == 'preset'
+        run: |
+          echo 'enable_extension "preset-firstrun"' >> "config/boards/${{ matrix.board }}.csc"
+          echo "[${{ matrix.board }}] enabled preset-firstrun extension for headless mode"
 
       - name: Compile Armbian image
         if: |
@@ -98,7 +116,7 @@ jobs:
         if: steps.find.outputs.images != ''
         uses: actions/upload-artifact@v4
         with:
-          name: armbian-${{ matrix.board }}-${{ matrix.branch }}-${{ matrix.release }}
+          name: armbian-${{ matrix.board }}-${{ matrix.branch }}-${{ matrix.variant }}-${{ matrix.release }}
           path: output/images/
           retention-days: 7
 
@@ -107,12 +125,85 @@ jobs:
         run: |
           mkdir -p output/checksums
           cd output/images
-          sha256sum *.{img,img.xz,img.gz} 2>/dev/null > ../checksums/${{ matrix.board }}-${{ matrix.release }}.sha256sum || true
+          sha256sum *.{img,img.xz,img.gz} 2>/dev/null > "../checksums/${{ matrix.board }}-${{ matrix.branch }}-${{ matrix.variant }}-${{ matrix.release }}.sha256sum" || true
 
       - name: Upload checksum artifacts
         if: steps.find.outputs.images != ''
         uses: actions/upload-artifact@v4
         with:
-          name: armbian-${{ matrix.board }}-${{ matrix.branch }}-${{ matrix.release }}-checksums
+          name: armbian-${{ matrix.board }}-${{ matrix.branch }}-${{ matrix.variant }}-${{ matrix.release }}-checksums
           path: output/checksums/
           retention-days: 7
+
+  release:
+    needs: build
+    runs-on: ubuntu-22.04
+    if: |
+      success() &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-output
+          merge-multiple: true
+
+      - name: Generate release body
+        id: body
+        run: |
+          cat > release-body.md << 'BODYEOF'
+          ## Build Information
+          - **Commit**: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          - **CI Run**: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+          ## Built Images
+
+          | Board | Kernel | Variant | Description |
+          |-------|--------|---------|-------------|
+          | fly-h3 | current (6.12) | wizard | First-run interactive setup wizard |
+          | fly-h3 | current (6.12) | preset | Pre-configured, skip wizard |
+          | fly-h3 | edge (6.18) | wizard | First-run interactive setup wizard |
+          | fly-h3 | edge (6.18) | preset | Pre-configured, skip wizard |
+          | fly-h618 | edge (6.18) | wizard | First-run interactive setup wizard |
+          | fly-h618 | edge (6.18) | preset | Pre-configured, skip wizard |
+
+          ## Variant Differences
+
+          ### wizard
+          - First boot launches Armbian interactive setup
+          - Prompts for root password, user account, locale, timezone, network
+
+          ### preset
+          - Skips first-boot wizard (fully automated)
+          - Root password: `mellow`
+          - User account: `mellow` / `mellow`
+          - Ethernet: DHCP enabled
+          - WiFi: disabled
+          - Timezone: `Asia/Shanghai`
+          - Locale: `en_US.UTF-8`
+          - Shell: `bash`
+
+          ## Usage
+          ```
+          xzcat <image>.img.xz | dd of=/dev/sdX bs=4M status=progress
+          sync
+          ```
+
+          ## Checksums
+          SHA256 checksums are included in the `-checksums` artifacts and attached below.
+          BODYEOF
+
+          echo "body_file=release-body.md" >> $GITHUB_OUTPUT
+
+      - name: Create pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          tag_name: build-${{ github.run_number }}
+          name: "Build #${{ github.run_number }} (${{ github.sha }})"
+          body_path: release-body.md
+          files: |
+            release-output/**/*.{img,img.xz,img.gz,sha256sum}
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

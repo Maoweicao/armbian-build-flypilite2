@@ -19,8 +19,6 @@ HAS_VIDEO_OUTPUT="no"
 MODULES_CURRENT=""
 MODULES_BLACKLIST=""
 
-enable_extension "preset-firstrun"
-
 function post_family_tweaks_bsp__fly-h3() {
 	local overlay_src="${SRC}/overlay/sun8i-h3"
 	local overlay_dst="${destination}${OVERLAY_DIR:-/boot/dtb/allwinner/overlay}"

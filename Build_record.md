@@ -58,11 +58,20 @@ pwm-clock ac200_clk: probe with driver pwm-clock failed with error -22
 
 ## CI Matrix (May 2026)
 
-| Board | Branch | Release |
-|-------|--------|---------|
-| fly-h3 | current (6.12) | trixie |
-| fly-h3 | edge (6.18) | trixie |
-| fly-h618 | edge (6.18) | trixie |
+| Board | Branch | Variant | Release |
+|-------|--------|---------|---------|
+| fly-h3 | current (6.12) | wizard | trixie |
+| fly-h3 | current (6.12) | preset | trixie |
+| fly-h3 | edge (6.18) | wizard | trixie |
+| fly-h3 | edge (6.18) | preset | trixie |
+| fly-h618 | edge (6.18) | wizard | trixie |
+| fly-h618 | edge (6.18) | preset | trixie |
+
+### Variants
+- **wizard**: Normal first-boot interactive setup (set password, user, network, locale)
+- **preset**: Pre-configured out-of-box - skips wizard (root:mellow, user:mellow:mellow, Ethernet DHCP, Asia/Shanghai)
+
+On push success → creates a GitHub pre-release with all images attached.
 
 ## WiFi (UWE5622)
 
