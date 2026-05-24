@@ -82,7 +82,7 @@
 	ac200_pwm_clk: ac200_clk {
 		compatible = "pwm-clock";
 		#clock-cells = <0>;
-		pwms = <&pwm 5 500 0>;
+		pwms = <&pwm5 0 500 0>;
 		clock-frequency = <2000000>;
 		status = "okay";
 	};

@@ -4241,18 +4241,18 @@ index 000000000000..111111111111
 +	if (ret)
 +		return ret;
 +
-+	ret = phy_drivers_register(&ac300_ephy_driver, THIS_MODULE);
++	ret = phy_drivers_register(&ac300_ephy_driver, 1, THIS_MODULE);
 +	if (ret)
 +		goto ac300_ephy_error;
 +
-+	ret = phy_drivers_register(&sunxi_phy_driver, THIS_MODULE);
++	ret = phy_drivers_register(&sunxi_phy_driver, 1, THIS_MODULE);
 +	if (ret)
 +		goto ephy_driver_error;
 +
 +	return ret;
 +
 +ephy_driver_error:
-+	phy_drivers_unregister(&ac300_ephy_driver);
++	phy_drivers_unregister(&ac300_ephy_driver, 1);
 +
 +ac300_ephy_error:
 +	platform_driver_unregister(&ac200_ephy_driver);
@@ -4262,8 +4262,8 @@ index 000000000000..111111111111
 +
 +static void ephy_exit(void)
 +{
-+	phy_drivers_unregister(&sunxi_phy_driver);
-+	phy_drivers_unregister(&ac300_ephy_driver);
++	phy_drivers_unregister(&sunxi_phy_driver, 1);
++	phy_drivers_unregister(&ac300_ephy_driver, 1);
 +	platform_driver_unregister(&ac200_ephy_driver);
 +}
 +
