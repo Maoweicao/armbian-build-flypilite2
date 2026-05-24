@@ -78,8 +78,14 @@
 		post-power-on-delay-ms = <200>;
 	};
 
-	/* Note: pwm/pwm5 not available in 6.12 DTSI;
-	 * AC200 EPHY uses I2C-only fallback, clock cal via NVMEM */
+	/* PWM5 clock for AC200 EPHY (2MHz = 500ns period) */
+	ac200_pwm_clk: ac200_clk {
+		compatible = "pwm-clock";
+		#clock-cells = <0>;
+		pwms = <&pwm 5 500 0>;
+		clock-frequency = <2000000>;
+		status = "okay";
+	};
 };
 
 &cpu0 {
@@ -204,8 +210,18 @@
 	};
 };
 
-/* Note: pwm/pwm5 nodes not available in 6.12 kernel DTSI;
- * AC200 EPHY clock calibration skipped for this branch */
+/* PWM5 clock provider for AC200 EPHY */
+/ {
+	soc {
+		pwm5: pwm5@0300a000 {
+			compatible = "allwinner,sunxi-pwm5";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pwm5_pin>;
+			clk_bypass_output = <0x1>;
+			status = "okay";
+		};
+	};
+};
 
 /* PMIC: AXP313A */
 &r_i2c {
@@ -277,7 +293,7 @@
 	ac200_x: mfd@10 {
 		compatible = "x-powers,ac200-sunxi";
 		reg = <0x10>;
-		/* clocks omitted: pwm-clock not available in 6.12 DTSI */
+		clocks = <&ac200_pwm_clk>;
 		nvmem-cells = <&ephy_calibration>;
 		nvmem-cell-names = "calibration";
 
