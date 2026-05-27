@@ -4,8 +4,8 @@
 
 | Board | SoC | Kernel | Ethernet | WiFi/BT | Status |
 |-------|-----|--------|----------|---------|--------|
-| fly-h618 | Allwinner H618 | edge (6.18) | AC200 EPHY (PWM5) | UWE5622 | Boot OK, Net OK |
-| fly-h618 | Allwinner H618 | current (6.12) | AC200 EPHY (PWM5) | UWE5622 | PWM5 clock broken (#pwm-cells missing) |
+| fly-h618 | Allwinner H618 | edge (6.18) | AC200 EPHY (PWM5) | AIC8800D80 | Boot OK, Net OK |
+| fly-h618 | Allwinner H618 | current (6.12) | AC200 EPHY (PWM5) | AIC8800D80 | PWM5 clock broken (#pwm-cells missing) |
 | fly-h3 | Allwinner H3 | current + edge | - | RTL8723BU | TBD |
 
 ## Fly-H618 Edge (6.18) - Working
@@ -73,11 +73,12 @@ pwm-clock ac200_clk: probe with driver pwm-clock failed with error -22
 
 On push success → creates a GitHub pre-release with all images attached.
 
-## WiFi (UWE5622)
+## WiFi (AIC8800D80)
 
-- Module confirmed from FlyOS extraction (not RTL8821CS)
-- Driver: `uwe5622-allwinner` extension
-- SDIO on MMC1, PG18 reset via mmc-pwrseq-simple
+- Module confirmed from FlyOS extraction (kernel module: `aic8800_fdrv`)
+- Driver is out-of-tree (vendor aic8800), SDIO on MMC1, PG18 reset
+- Firmware path: `/lib/firmware/aic8800/`
+- TODO: AIC8800 driver needs porting/packaging for Armbian kernel
 
 ## Boot Configuration
 

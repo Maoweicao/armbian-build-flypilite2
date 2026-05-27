@@ -8,7 +8,7 @@
  *   PMIC:  AXP313A on r_i2c @ 0x36
  *   EMAC1: RMII + AC200 internal EPHY (via I2C3 PA10/PA11, PWM5 clock)
  *   MMC0:  SD card (cd: PF6)
- *   MMC1:  SDIO WiFi - RTL8821CS (non-removable, PG18 reset)
+ *   MMC1:  SDIO WiFi - AIC8800D80 (non-removable, PG18 reset)
  *   MMC2:  eMMC 8-bit (non-removable)
  *   UART0: PH0/PH1 (ttyS0) - console
  *   HDMI:  enabled
@@ -168,7 +168,7 @@
 	status = "okay";
 };
 
-/* SDIO WiFi - RTL8821CS */
+/* SDIO WiFi - AIC8800D80 */
 &mmc1 {
 	bus-width = <4>;
 	max-frequency = <150000000>;

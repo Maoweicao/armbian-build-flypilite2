@@ -1,4 +1,4 @@
-# Allwinner H618 quad core 1GB RAM SoC WiFi/BT RMII Ethernet eMMC
+# Allwinner H618 quad core 1GB RAM SoC AIC8800D80 WiFi/BT RMII Ethernet eMMC
 # UART0: PH0/PH1 (ttyS0) - console
 # UART1: PG6/PG7 (ttyS1)
 # I2C0: PI5/PI6 - GT911 touch controller
@@ -6,7 +6,7 @@
 # SPI0: PC0-PC4 (cut pins)
 # SPI1: PH5-PH9, PI7 - TFT display, touch
 # MMC0: SD card, cd PF6
-# MMC1: SDIO WiFi/BT (UWE5622 unisoc), non-removable
+# MMC1: SDIO WiFi/BT (AIC8800D80), non-removable
 # MMC2: eMMC 8-bit (non-removable)
 # EMAC1: RMII, AC200 Internal EPHY @ addr 1
 # USB OTG: peripheral mode
@@ -31,7 +31,8 @@ HAS_VIDEO_OUTPUT="yes"
 DEFAULT_CONSOLE="serial"
 MODULES_BLACKLIST=""
 
-enable_extension "uwe5622-allwinner"
+AIC8800_TYPE="sdio"
+enable_extension "radxa-aic8800"
 
 function post_family_tweaks_bsp__fly-h618() {
 	local overlay_src="${SRC}/overlay/sun50i-h618"
