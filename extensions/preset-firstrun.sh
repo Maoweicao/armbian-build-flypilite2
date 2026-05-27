@@ -1,52 +1,48 @@
+# Preset-firstrun: fully headless first-boot (no wizard prompts).
+#
+# Override defaults by setting these variables before enabling the extension:
+#   PRESET_ROOT_PWD="mellow"
+#   PRESET_USER="mellow"
+#   PRESET_USER_PWD="mellow"
+#   PRESET_TIMEZONE="Asia/Shanghai"
+#   PRESET_LOCALE="en_US.UTF-8"
+
 function post_family_tweaks__preset_configs() {
-	display_alert "$BOARD" "preset configs for rootfs" "info"
-	# Set PRESET_NET_CHANGE_DEFAULTS to 1 to apply any network related settings below
-	echo "PRESET_NET_CHANGE_DEFAULTS=1" > "${SDCARD}"/root/.not_logged_in_yet
+	display_alert "$BOARD" "preset-firstrun: writing headless first-boot presets" "info"
 
-	# Enable WiFi or Ethernet.
-	#      NB: If both are enabled, WiFi will take priority and Ethernet will be disabled.
-	echo "PRESET_NET_ETHERNET_ENABLED=1" >> "${SDCARD}"/root/.not_logged_in_yet
-	echo "PRESET_NET_WIFI_ENABLED=1" >> "${SDCARD}"/root/.not_logged_in_yet
+	local root_pwd="${PRESET_ROOT_PWD:-mellow}"
+	local user_name="${PRESET_USER:-mellow}"
+	local user_pwd="${PRESET_USER_PWD:-mellow}"
+	local timezone="${PRESET_TIMEZONE:-Asia/Shanghai}"
+	local locale="${PRESET_LOCALE:-en_US.UTF-8}"
+	local preset_file="${SDCARD}/root/.not_logged_in_yet"
 
-	#Enter your WiFi creds
-	#      SECURITY WARN: Your wifi keys will be stored in plaintext, no encryption.
-	echo "PRESET_NET_WIFI_SSID='MySSID'" >> "${SDCARD}"/root/.not_logged_in_yet
-	echo "PRESET_NET_WIFI_KEY='MyWiFiKEY'" >> "${SDCARD}"/root/.not_logged_in_yet
+	# Network: Ethernet DHCP, no WiFi by default
+	echo "PRESET_NET_CHANGE_DEFAULTS=1" > "${preset_file}"
+	echo "PRESET_NET_ETHERNET_ENABLED=1" >> "${preset_file}"
+	echo "PRESET_NET_WIFI_ENABLED=0" >> "${preset_file}"
 
-	#      Country code to enable power ratings and channels for your country. eg: GB US DE | https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
-	echo "PRESET_NET_WIFI_COUNTRYCODE='GB'" >> "${SDCARD}"/root/.not_logged_in_yet
+	# Skip manual wifi connect prompt
+	echo "PRESET_CONNECT_WIRELESS=n" >> "${preset_file}"
 
-	#If you want to use a static ip, set it here
-	echo "PRESET_NET_USE_STATIC=1" >> "${SDCARD}"/root/.not_logged_in_yet
-	echo "PRESET_NET_STATIC_IP='192.168.0.100'" >> "${SDCARD}"/root/.not_logged_in_yet
-	echo "PRESET_NET_STATIC_MASK='255.255.255.0'" >> "${SDCARD}"/root/.not_logged_in_yet
-	echo "PRESET_NET_STATIC_GATEWAY='192.168.0.1'" >> "${SDCARD}"/root/.not_logged_in_yet
-	echo "PRESET_NET_STATIC_DNS='8.8.8.8 8.8.4.4'" >> "${SDCARD}"/root/.not_logged_in_yet
+	# Skip language/locale prompt on first login
+	echo "SET_LANG_BASED_ON_LOCATION=n" >> "${preset_file}"
 
-	# Preset user default shell, you can choose bash or  zsh
-	echo "PRESET_USER_SHELL=bash" >> "${SDCARD}"/root/.not_logged_in_yet
+	# Locale and timezone
+	echo "PRESET_LOCALE=${locale}" >> "${preset_file}"
+	echo "PRESET_TIMEZONE=${timezone}" >> "${preset_file}"
 
-	# Set PRESET_CONNECT_WIRELESS=y if you want to connect wifi manually at first login
-	echo "PRESET_CONNECT_WIRELESS=n" >> "${SDCARD}"/root/.not_logged_in_yet
+	# User account preset (armbian-firstlogin reads these to skip prompts)
+	echo "PRESET_USER_NAME=${user_name}" >> "${preset_file}"
+	echo "PRESET_USER_PASSWORD=${user_pwd}" >> "${preset_file}"
+	echo "PRESET_DEFAULT_REALNAME=Mellow Fly" >> "${preset_file}"
+	echo "PRESET_USER_SHELL=bash" >> "${preset_file}"
 
-	# Set SET_LANG_BASED_ON_LOCATION=n if you want to choose "Set user language based on your location?" with "n" at first login
-	echo "SET_LANG_BASED_ON_LOCATION=y" >> "${SDCARD}"/root/.not_logged_in_yet
+	# Root credentials
+	echo "PRESET_ROOT_PASSWORD=${root_pwd}" >> "${preset_file}"
 
-	# Preset default locale
-	echo "PRESET_LOCALE=en_US.UTF-8" >> "${SDCARD}"/root/.not_logged_in_yet
+	# Write timezone to /etc/timezone so systemd uses it immediately
+	echo "${timezone}" > "${SDCARD}/etc/timezone"
 
-	# Preset timezone
-	echo "PRESET_TIMEZONE=Etc/UTC" >> "${SDCARD}"/root/.not_logged_in_yet
-
-	# Preset root password
-	echo "PRESET_ROOT_PASSWORD=RootPassword" >> "${SDCARD}"/root/.not_logged_in_yet
-
-	# Preset username
-	echo "PRESET_USER_NAME=armbian" >> "${SDCARD}"/root/.not_logged_in_yet
-
-	# Preset user password
-	echo "PRESET_USER_PASSWORD=UserPassword" >> "${SDCARD}"/root/.not_logged_in_yet
-
-	# Preset user default realname
-	echo "PRESET_DEFAULT_REALNAME=Armbian" >> "${SDCARD}"/root/.not_logged_in_yet
+	display_alert "$BOARD" "preset-firstrun done (root:${root_pwd} user:${user_name}:${user_pwd})" "info"
 }
