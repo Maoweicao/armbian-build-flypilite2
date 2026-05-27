@@ -1,0 +1,260 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Armbian <info@armbian.com>
+Date: Tue, 27 May 2026 00:00:00 +0800
+Subject: u-boot: dts: upstream: arm64: Add sun50i-h618-fly-h618.dts
+
+Add U-Boot device tree for FLY H618 (FlyPi Lite 2) with eMMC
+on MMC2, SD on MMC0, AXP313A PMIC, AC200 EPHY on EMAC1.
+
+---
+ .../src/arm64/allwinner/sun50i-h618-fly-h618.dts   | 242 +++++++++++++++++++++
+ 1 file changed, 242 insertions(+)
+ create mode 100644 dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts
+
+diff --git a/dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts b/dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts
+new file mode 100644
+index 000000000000..000000000001
+--- /dev/null
++++ b/dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts
+@@ -0,0 +1,242 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright (c) 2024 Mellow FLY (FlyPi Lite 2)
++ */
++
++/dts-v1/;
++
++#include "sun50i-h616.dtsi"
++#include "sun50i-h616-cpu-opp.dtsi"
++
++#include <dt-bindings/gpio/gpio.h>
++
++/ {
++	model = "Mellow FLY H618";
++	compatible = "mellow,fly-h618", "allwinner,sun50i-h618", "allwinner,sun50i-h616";
++
++	aliases {
++		serial0 = &uart0;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	reg_vcc5v: vcc5v {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc-5v";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		regulator-always-on;
++	};
++
++	reg_vcc3v3: vcc3v3 {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc-3v3";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&reg_vcc5v>;
++		regulator-always-on;
++	};
++
++	reg_vcc1v8: vcc1v8 {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc-1v8";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		vin-supply = <&reg_vcc3v3>;
++		regulator-always-on;
++	};
++
++	ac200_pwm_clk: ac200_clk {
++		compatible = "pwm-clock";
++		#clock-cells = <0>;
++		pwms = <&pwm 5 500 0>;
++		clock-frequency = <2000000>;
++		status = "okay";
++	};
++};
++
++&r_i2c {
++	status = "okay";
++
++	axp313: pmic@36 {
++		compatible = "x-powers,axp313a";
++		reg = <0x36>;
++		#interrupt-cells = <1>;
++		interrupt-controller;
++		interrupt-parent = <&pio>;
++
++		vin1-supply = <&reg_vcc5v>;
++		vin2-supply = <&reg_vcc5v>;
++		vin3-supply = <&reg_vcc5v>;
++
++		regulators {
++			reg_aldo1: aldo1 {
++				regulator-name = "vcc-1v8-pll";
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <1800000>;
++				regulator-always-on;
++			};
++
++			reg_dldo1: dldo1 {
++				regulator-name = "vcc-3v3-io";
++				regulator-min-microvolt = <3300000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			reg_dcdc1: dcdc1 {
++				regulator-name = "vdd-gpu-sys";
++				regulator-min-microvolt = <810000>;
++				regulator-max-microvolt = <990000>;
++				regulator-always-on;
++			};
++
++			reg_dcdc2: dcdc2 {
++				regulator-name = "vdd-cpu";
++				regulator-min-microvolt = <810000>;
++				regulator-max-microvolt = <1100000>;
++				regulator-always-on;
++			};
++
++			reg_dcdc3: dcdc3 {
++				regulator-name = "vdd-dram";
++				regulator-min-microvolt = <1100000>;
++				regulator-max-microvolt = <1100000>;
++				regulator-always-on;
++			};
++		};
++	};
++};
++
++&cpu0 {
++	cpu-supply = <&reg_dcdc2>;
++};
++
++&sid {
++	ephy_calibration: ephy-calibration@2c {
++		reg = <0x2c 0x2>;
++	};
++};
++
++/* SD card */
++&mmc0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc0_pins>;
++	vmmc-supply = <&reg_dldo1>;
++	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>; /* PF6 */
++	bus-width = <4>;
++	max-frequency = <50000000>;
++	disable-wp;
++	no-1-8-v;
++	status = "okay";
++};
++
++/* SDIO WiFi (AIC8800D80) */
++&mmc1 {
++	bus-width = <4>;
++	max-frequency = <150000000>;
++	non-removable;
++	disable-wp;
++	vmmc-supply = <&reg_vcc3v3>;
++	status = "okay";
++};
++
++/* eMMC 8-bit */
++&mmc2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc2_pins>;
++	vmmc-supply = <&reg_vcc3v3>;
++	vqmmc-supply = <&reg_vcc1v8>;
++	bus-width = <8>;
++	max-frequency = <200000000>;
++	non-removable;
++	cap-mmc-hw-reset;
++	mmc-hs200-1_8v;
++	disable-wp;
++	status = "okay";
++};
++
++&pio {
++	vcc-pc-supply = <&reg_aldo1>;
++	vcc-pf-supply = <&reg_dldo1>;
++	vcc-pg-supply = <&reg_dldo1>;
++	vcc-ph-supply = <&reg_dldo1>;
++	vcc-pi-supply = <&reg_dldo1>;
++
++	/* Custom 8-bit eMMC pin configuration */
++	mmc2_pins: mmc2-pins {
++		pins = "PC1", "PC5", "PC6",
++		       "PC8", "PC9", "PC10", "PC11",
++		       "PC13", "PC14", "PC15", "PC16";
++		function = "mmc2";
++		drive-strength = <30>;
++		bias-pull-up;
++	};
++};
++
++&pwm {
++	status = "okay";
++};
++
++/* PWM5 clock output for AC200 EPHY */
++&pwm5 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pwm5_pin>;
++	clk_bypass_output = <0x1>;
++	status = "okay";
++};
++
++/* EMAC0 is not wired */
++&emac0 {
++	status = "disabled";
++};
++
++/* EMAC1: RMII + AC200 internal EPHY */
++&emac1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&rmii_pins>;
++	phy-mode = "rmii";
++	phy-handle = <&rmii_phy>;
++	phy-supply = <&reg_dldo1>;
++	allwinner,rx-delay-ps = <3100>;
++	allwinner,tx-delay-ps = <700>;
++	status = "okay";
++};
++
++&mdio1 {
++	rmii_phy: ethernet-phy@1 {
++		compatible = "ethernet-phy-ieee802.3-c22";
++		reg = <1>;
++	};
++};
++
++/* AC200 MFD for EPHY */
++&i2c3 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c3_pa_pins>;
++
++	ac200: mfd@10 {
++		compatible = "x-powers,ac200-sunxi";
++		reg = <0x10>;
++		clocks = <&ac200_pwm_clk>;
++		nvmem-cells = <&ephy_calibration>;
++		nvmem-cell-names = "calibration";
++
++		ac200_ephy: phy {
++			compatible = "x-powers,ac200-ephy-sunxi";
++			status = "okay";
++		};
++	};
++};
++
++&uart0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart0_ph_pins>;
++	status = "okay";
++};
+-- 
+2.35.3
