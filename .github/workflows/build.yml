@@ -73,6 +73,16 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Free disk space
+        run: |
+          echo "=== Before cleanup ==="
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker image prune -af || true
+          sudo apt-get clean
+          echo "=== After cleanup ==="
+          df -h /
+
       - name: Set up QEMU binfmt
         uses: docker/setup-qemu-action@v3
 
