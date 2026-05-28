@@ -7,8 +7,8 @@ Add U-Boot device tree for FLY H618 (FlyPi Lite 2) with eMMC
 on MMC2, SD on MMC0, AXP313A PMIC, AC200 EPHY on EMAC1.
 
 ---
- .../src/arm64/allwinner/sun50i-h618-fly-h618.dts   | 242 +++++++++++++++++++++
- 1 file changed, 242 insertions(+)
+ .../src/arm64/allwinner/sun50i-h618-fly-h618.dts   | 239 ++++++++++++++++++++
+ 1 file changed, 239 insertions(+)
  create mode 100644 dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts
 
 diff --git a/dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts b/dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts
@@ -16,7 +16,7 @@ new file mode 100644
 index 000000000000..000000000001
 --- /dev/null
 +++ b/dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts
-@@ -0,0 +1,242 @@
+@@ -0,0 +1,239 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2024 Mellow FLY (FlyPi Lite 2)

@@ -8,8 +8,8 @@ and CONFIG_SUPPORT_EMMC_BOOT. Based on orangepi_zero3_defconfig
 with these additions plus HS200 mode for 8-bit eMMC.
 
 ---
- configs/fly_h618_defconfig | 38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+ configs/fly_h618_defconfig | 24 ++++++++++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
  create mode 100644 configs/fly_h618_defconfig
 
 diff --git a/configs/fly_h618_defconfig b/configs/fly_h618_defconfig
@@ -17,7 +17,7 @@ new file mode 100644
 index 000000000000..000000000001
 --- /dev/null
 +++ b/configs/fly_h618_defconfig
-@@ -0,0 +1,38 @@
+@@ -0,0 +1,24 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_SUNXI=y
 +CONFIG_DEFAULT_DEVICE_TREE="allwinner/sun50i-h618-fly-h618"
