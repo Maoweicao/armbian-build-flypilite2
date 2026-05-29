@@ -36,7 +36,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
@@ -98,6 +99,13 @@ jobs:
       - name: Set up QEMU binfmt
         uses: docker/setup-qemu-action@v3
 
+      - name: Restore ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: output/ccache
+          key: ccache-${{ matrix.branch }}-${{ hashFiles('config/kernel/linux-sunxi64-edge.config') }}-v1
+          restore-keys: ccache-${{ matrix.branch }}-v1
+
       - name: Enable preset-firstrun (preset variant only)
         if: matrix.variant == 'preset'
         run: |
@@ -118,6 +126,13 @@ jobs:
             BUILD_MINIMAL=no \
             BUILD_DESKTOP=no \
             KERNEL_CONFIGURE=no
+
+      - name: Save ccache
+        uses: actions/cache/save@v4
+        if: always() && steps.compile.outcome != 'skipped'
+        with:
+          path: output/ccache
+          key: ccache-${{ matrix.branch }}-${{ hashFiles('config/kernel/linux-sunxi64-edge.config') }}-v1-${{ github.run_id }}
 
       - name: Find built images
         if: success() && steps.compile.outcome != 'skipped'
