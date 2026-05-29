@@ -39,6 +39,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
         include:
@@ -103,6 +104,7 @@ jobs:
           matrix.board == github.event.inputs.board
         id: compile
         run: |
+          export CPUS=2
           ./compile.sh \
             BOARD="${{ matrix.board }}" \
             BRANCH="${{ matrix.branch }}" \
