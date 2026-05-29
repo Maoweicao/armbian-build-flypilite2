@@ -42,22 +42,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - board: fly-h3
-            branch: current
-            variant: wizard
-            release: trixie
-          - board: fly-h3
-            branch: current
-            variant: preset
-            release: trixie
-          - board: fly-h3
-            branch: edge
-            variant: wizard
-            release: trixie
-          - board: fly-h3
-            branch: edge
-            variant: preset
-            release: trixie
           - board: fly-h618
             branch: edge
             variant: wizard
