@@ -4,11 +4,13 @@ Date: Tue, 27 May 2026 00:00:00 +0800
 Subject: u-boot: dts: upstream: arm64: Add sun50i-h618-fly-h618.dts
 
 Add U-Boot device tree for FLY H618 (FlyPi Lite 2) with eMMC
-on MMC2, SD on MMC0, AXP313A PMIC, AC200 EPHY on EMAC1.
+on MMC2, SD on MMC0, AXP313A PMIC. Only nodes needed for boot
+(regulators, MMC, UART) are included. Ethernet/PWM/AC200 are
+not needed in U-Boot and reference labels not in the upstream tree.
 
 ---
- .../src/arm64/allwinner/sun50i-h618-fly-h618.dts   | 239 ++++++++++++++++++++
- 1 file changed, 239 insertions(+)
+ .../src/arm64/allwinner/sun50i-h618-fly-h618.dts   | 155 ++++++++++++++++++++
+ 1 file changed, 155 insertions(+)
  create mode 100644 dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts
 
 diff --git a/dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts b/dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts
@@ -16,7 +18,7 @@ new file mode 100644
 index 000000000000..000000000001
 --- /dev/null
 +++ b/dts/upstream/src/arm64/allwinner/sun50i-h618-fly-h618.dts
-@@ -0,0 +1,239 @@
+@@ -0,0 +1,155 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2024 Mellow FLY (FlyPi Lite 2)
@@ -65,14 +67,6 @@ index 000000000000..000000000001
 +		regulator-max-microvolt = <1800000>;
 +		vin-supply = <&reg_vcc3v3>;
 +		regulator-always-on;
-+	};
-+
-+	ac200_pwm_clk: ac200_clk {
-+		compatible = "pwm-clock";
-+		#clock-cells = <0>;
-+		pwms = <&pwm 5 500 0>;
-+		clock-frequency = <2000000>;
-+		status = "okay";
 +	};
 +};
 +
@@ -133,12 +127,6 @@ index 000000000000..000000000001
 +	cpu-supply = <&reg_dcdc2>;
 +};
 +
-+&sid {
-+	ephy_calibration: ephy-calibration@2c {
-+		reg = <0x2c 0x2>;
-+	};
-+};
-+
 +/* SD card */
 +&mmc0 {
 +	pinctrl-names = "default";
@@ -192,62 +180,6 @@ index 000000000000..000000000001
 +		function = "mmc2";
 +		drive-strength = <30>;
 +		bias-pull-up;
-+	};
-+};
-+
-+&pwm {
-+	status = "okay";
-+};
-+
-+/* PWM5 clock output for AC200 EPHY */
-+&pwm5 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pwm5_pin>;
-+	clk_bypass_output = <0x1>;
-+	status = "okay";
-+};
-+
-+/* EMAC0 is not wired */
-+&emac0 {
-+	status = "disabled";
-+};
-+
-+/* EMAC1: RMII + AC200 internal EPHY */
-+&emac1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&rmii_pins>;
-+	phy-mode = "rmii";
-+	phy-handle = <&rmii_phy>;
-+	phy-supply = <&reg_dldo1>;
-+	allwinner,rx-delay-ps = <3100>;
-+	allwinner,tx-delay-ps = <700>;
-+	status = "okay";
-+};
-+
-+&mdio1 {
-+	rmii_phy: ethernet-phy@1 {
-+		compatible = "ethernet-phy-ieee802.3-c22";
-+		reg = <1>;
-+	};
-+};
-+
-+/* AC200 MFD for EPHY */
-+&i2c3 {
-+	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&i2c3_pa_pins>;
-+
-+	ac200: mfd@10 {
-+		compatible = "x-powers,ac200-sunxi";
-+		reg = <0x10>;
-+		clocks = <&ac200_pwm_clk>;
-+		nvmem-cells = <&ephy_calibration>;
-+		nvmem-cell-names = "calibration";
-+
-+		ac200_ephy: phy {
-+			compatible = "x-powers,ac200-ephy-sunxi";
-+			status = "okay";
-+		};
 +	};
 +};
 +
