@@ -104,7 +104,6 @@ jobs:
           matrix.board == github.event.inputs.board
         id: compile
         run: |
-          export CPUS=2
           ./compile.sh \
             BOARD="${{ matrix.board }}" \
             BRANCH="${{ matrix.branch }}" \
