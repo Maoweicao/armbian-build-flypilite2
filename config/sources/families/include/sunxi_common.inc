@@ -39,6 +39,12 @@ case $BRANCH in
 		declare -g KERNEL_MAJOR_MINOR="6.18" # Major and minor versions of this kernel.
 		declare -g KERNELBRANCH="tag:v6.18.4"
 		;;
+
+	rt)
+		declare -g KERNEL_MAJOR_MINOR="6.12" # RT kernel based on 6.12 LTS
+		declare -g KERNELBRANCH="tag:v6.12.64"
+		declare -g LINUXCONFIG='linux-sunxi-rt'
+		;;
 esac
 
 KERNELPATCHDIR="archive/sunxi-${KERNEL_MAJOR_MINOR}"

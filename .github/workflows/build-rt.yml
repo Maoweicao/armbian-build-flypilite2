@@ -1,0 +1,250 @@
+name: Build RT Kernel Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'config/boards/fly-*.*'
+      - 'config/kernel/*rt*.config'
+      - 'config/kernel/linux-sunxi-rt.config'
+      - 'config/kernel/linux-sunxi64-rt.config'
+      - 'config/bootenv/fly-*.txt'
+      - 'overlay/sun8i-h3/**'
+      - 'overlay/sun50i-h618/**'
+      - 'patch/kernel/archive/sunxi-*/**'
+      - 'config/sources/families/include/sunxi_common.inc'
+      - 'config/sources/families/include/sunxi64_common.inc'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'config/boards/fly-*.*'
+      - 'config/kernel/*rt*.config'
+      - 'config/kernel/linux-sunxi-rt.config'
+      - 'config/kernel/linux-sunxi64-rt.config'
+      - 'config/bootenv/fly-*.txt'
+      - 'overlay/sun8i-h3/**'
+      - 'overlay/sun50i-h618/**'
+      - 'patch/kernel/archive/sunxi-*/**'
+      - 'config/sources/families/include/sunxi_common.inc'
+      - 'config/sources/families/include/sunxi64_common.inc'
+  workflow_dispatch:
+    inputs:
+      board:
+        description: 'Board to build (leave empty to build all)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - fly-h3
+          - fly-h618
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        include:
+          - board: fly-h3
+            branch: rt
+            variant: wizard
+            release: trixie
+          - board: fly-h3
+            branch: rt
+            variant: preset
+            release: trixie
+          - board: fly-h618
+            branch: rt
+            variant: wizard
+            release: trixie
+          - board: fly-h618
+            branch: rt
+            variant: preset
+            release: trixie
+
+    steps:
+      - name: Checkout build framework
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Free disk space
+        run: |
+          echo "=== Before cleanup ==="
+          df -h /
+          echo "--- Removing large unused packages/tools ---"
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          sudo rm -rf /usr/local/share/boost /usr/local/share/chromium
+          sudo rm -rf /usr/local/lib/node_modules /usr/local/.ghcup
+          echo "--- Cleaning APT and Docker ---"
+          sudo apt-get clean
+          sudo apt-get autoremove -y || true
+          sudo docker image prune -af || true
+          sudo docker system prune -af --volumes || true
+          echo "--- Removing large packages ---"
+          sudo apt-get remove -y --purge \
+            aspnetcore-runtime-* dotnet-runtime-* \
+            gfortran-* ghc-* llvm-* clang-* \
+            mono-* msbuild ruby-* \
+            temurin-* zulu-* || true
+          sudo rm -rf /swapfile /mnt/swapfile 2>/dev/null || true
+          echo "=== After cleanup ==="
+          df -h /
+
+      - name: Set up QEMU binfmt
+        uses: docker/setup-qemu-action@v3
+
+      - name: Restore ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: output/ccache
+          key: ccache-rt-${{ matrix.board }}-${{ hashFiles('config/kernel/linux-sunxi-rt.config', 'config/kernel/linux-sunxi64-rt.config') }}-v1
+          restore-keys: ccache-rt-${{ matrix.board }}-v1
+
+      - name: Enable preset-firstrun (preset variant only)
+        if: matrix.variant == 'preset'
+        run: |
+          echo 'enable_extension "preset-firstrun"' >> "config/boards/${{ matrix.board }}.csc"
+          echo "[${{ matrix.board }}] enabled preset-firstrun extension for headless mode"
+
+      - name: Compile RT Kernel image
+        if: |
+          github.event_name != 'workflow_dispatch' ||
+          github.event.inputs.board == '' ||
+          matrix.board == github.event.inputs.board
+        id: compile
+        run: |
+          ./compile.sh \
+            BOARD="${{ matrix.board }}" \
+            BRANCH="${{ matrix.branch }}" \
+            RELEASE="${{ matrix.release }}" \
+            BUILD_MINIMAL=no \
+            BUILD_DESKTOP=no \
+            KERNEL_CONFIGURE=no
+
+      - name: Save ccache
+        uses: actions/cache/save@v4
+        if: always() && steps.compile.outcome != 'skipped'
+        with:
+          path: output/ccache
+          key: ccache-rt-${{ matrix.board }}-${{ hashFiles('config/kernel/linux-sunxi-rt.config', 'config/kernel/linux-sunxi64-rt.config') }}-v1-${{ github.run_id }}
+
+      - name: Find built images
+        if: success() && steps.compile.outcome != 'skipped'
+        id: find
+        run: |
+          IMG_DIR="output/images"
+          IMAGES=$(find "$IMG_DIR" -type f \
+            \( -name "*.img.xz" -o -name "*.img" -o -name "*.img.gz" \) \
+            -printf '%f\n' 2>/dev/null || true)
+          echo "Found images: $IMAGES"
+          {
+            echo "images<<EOF"
+            echo "$IMAGES"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Upload images as artifacts
+        if: steps.find.outputs.images != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: armbian-rt-${{ matrix.board }}-${{ matrix.variant }}-${{ matrix.release }}
+          path: output/images/
+          retention-days: 7
+
+      - name: Upload SHA256 checksums
+        if: steps.find.outputs.images != ''
+        run: |
+          mkdir -p output/checksums
+          cd output/images
+          sha256sum *.{img,img.xz,img.gz} 2>/dev/null > "../checksums/${{ matrix.board }}-rt-${{ matrix.variant }}-${{ matrix.release }}.sha256sum" || true
+
+      - name: Upload checksum artifacts
+        if: steps.find.outputs.images != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: armbian-rt-${{ matrix.board }}-${{ matrix.variant }}-${{ matrix.release }}-checksums
+          path: output/checksums/
+          retention-days: 7
+
+  release:
+    needs: build
+    runs-on: ubuntu-22.04
+    if: |
+      success() &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-output
+          merge-multiple: true
+
+      - name: Generate release body
+        id: body
+        run: |
+          cat > release-body.md << 'BODYEOF'
+          ## RT Kernel Build Information
+          - **Commit**: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+          - **CI Run**: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+          ## Built RT Kernel Images
+
+          | Board | Kernel | Variant | Description |
+          |-------|--------|---------|-------------|
+          | fly-h3 | rt (6.12-rt) | wizard | RT Kernel with first-run interactive setup |
+          | fly-h3 | rt (6.12-rt) | preset | RT Kernel pre-configured, skip wizard |
+          | fly-h618 | rt (6.12-rt) | wizard | RT Kernel with first-run interactive setup |
+          | fly-h618 | rt (6.12-rt) | preset | RT Kernel pre-configured, skip wizard |
+
+          ## RT Kernel Features
+          - **CONFIG_PREEMPT_RT=y**: Full preemption real-time support
+          - **CONFIG_NO_HZ_FULL=y**: Tickless operation for reduced latency
+          - **CONFIG_HIGH_RES_TIMERS=y**: High resolution timers
+          - Based on Linux 6.12 LTS kernel
+
+          ## Variant Differences
+
+          ### wizard
+          - First boot launches Armbian interactive setup
+          - Prompts for root password, user account, locale, timezone, network
+
+          ### preset
+          - Skips first-boot wizard (fully automated)
+          - Root password: `mellow`
+          - User account: `mellow` / `mellow`
+          - Ethernet: DHCP enabled
+          - WiFi: disabled
+          - Timezone: `Asia/Shanghai`
+          - Locale: `en_US.UTF-8`
+          - Shell: `bash`
+
+          ## Usage
+          ```
+          xzcat <image>.img.xz | dd of=/dev/sdX bs=4M status=progress
+          sync
+          ```
+
+          ## Checksums
+          SHA256 checksums are included in the `-checksums` artifacts and attached below.
+          BODYEOF
+
+          echo "body_file=release-body.md" >> $GITHUB_OUTPUT
+
+      - name: Create pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          tag_name: rt-build-${{ github.run_number }}
+          name: "RT Kernel Build #${{ github.run_number }} (${{ github.sha }})"
+          body_path: release-body.md
+          files: |
+            release-output/**/*.img.xz
+            release-output/**/*.img.gz
+            release-output/**/*.sha256sum
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
