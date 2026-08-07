@@ -1,0 +1,320 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2024 Mellow FLY (FlyPi Lite 2)
+ * Based on OrangePi Zero2W and BananaPi M4 Zero DTS
+ *
+ * Hardware:
+ *   SoC:   Allwinner H618 (sun50i-h618)
+ *   PMIC:  AXP313A on r_i2c @ 0x36
+ *   EMAC1: RMII + AC200 internal EPHY (via I2C3 PA10/PA11, PWM5 clock)
+ *   MMC0:  SD card (cd: PF6)
+ *   MMC1:  SDIO WiFi - AIC8800D80 (non-removable, PG18 reset)
+ *   MMC2:  eMMC 8-bit (non-removable)
+ *   UART0: PH0/PH1 (ttyS0) - console
+ *   HDMI:  enabled
+ */
+
+/dts-v1/;
+
+#include "sun50i-h616.dtsi"
+#include "sun50i-h616-cpu-opp.dtsi"
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/leds/common.h>
+
+/ {
+	model = "Mellow FLY H618";
+	compatible = "mellow,fly-h618", "allwinner,sun50i-h618", "allwinner,sun50i-h616";
+
+	aliases {
+		ethernet0 = &emac1;
+		serial0 = &uart0;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	connector {
+		compatible = "hdmi-connector";
+		type = "d";
+
+		port {
+			hdmi_con_in: endpoint {
+				remote-endpoint = <&hdmi_out_con>;
+			};
+		};
+	};
+
+	reg_vcc5v: regulator-vcc5v {
+		compatible = "regulator-fixed";
+		regulator-always-on;
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-name = "vcc-5v";
+	};
+
+	reg_vcc3v3: regulator-vcc3v3 {
+		compatible = "regulator-fixed";
+		regulator-always-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-name = "vcc-3v3";
+		vin-supply = <&reg_vcc5v>;
+	};
+
+	reg_vcc1v8: regulator-vcc1v8 {
+		compatible = "regulator-fixed";
+		regulator-always-on;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-name = "vcc-1v8";
+		vin-supply = <&reg_vcc3v3>;
+	};
+
+	wifi_pwrseq: wifi-pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&pio 6 18 GPIO_ACTIVE_LOW>; /* PG18 */
+		post-power-on-delay-ms = <200>;
+	};
+
+	/* PWM5 clock for AC200 EPHY (2MHz = 500ns period) */
+	ac200_pwm_clk: ac200_clk {
+		compatible = "pwm-clock";
+		#clock-cells = <0>;
+		pwms = <&pwm 5 500 0>;
+		clock-frequency = <2000000>;
+		status = "okay";
+	};
+};
+
+&cpu0 {
+	cpu-supply = <&reg_dcdc2>;
+};
+
+&de {
+	status = "okay";
+};
+
+&hdmi {
+	hvcc-supply = <&reg_aldo1>;
+	status = "okay";
+};
+
+&hdmi_out {
+	hdmi_out_con: endpoint {
+		remote-endpoint = <&hdmi_con_in>;
+	};
+};
+
+/* EMAC0 is not wired on FLY H618 */
+&emac0 {
+	status = "disabled";
+};
+
+/* EMAC1: RMII + AC200 internal EPHY */
+&emac1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&rmii_pins>;
+	phy-mode = "rmii";
+	phy-handle = <&rmii_phy>;
+	phy-supply = <&reg_dldo1>;
+	allwinner,rx-delay-ps = <3100>;
+	allwinner,tx-delay-ps = <700>;
+	status = "okay";
+};
+
+&mdio1 {
+	rmii_phy: ethernet-phy@1 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <1>;
+	};
+};
+
+&ehci1 {
+	status = "okay";
+};
+
+&ehci2 {
+	status = "okay";
+};
+
+&ehci3 {
+	status = "okay";
+};
+
+&ohci1 {
+	status = "okay";
+};
+
+&ohci2 {
+	status = "okay";
+};
+
+&ohci3 {
+	status = "okay";
+};
+
+/* SD card slot */
+&mmc0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc0_pins>;
+	bus-width = <4>;
+	max-frequency = <50000000>;
+	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>; /* PF6 */
+	vmmc-supply = <&reg_dldo1>;
+	disable-wp;
+	no-1-8-v;
+	status = "okay";
+};
+
+/* SDIO WiFi - AIC8800D80 */
+&mmc1 {
+	bus-width = <4>;
+	max-frequency = <150000000>;
+	non-removable;
+	disable-wp;
+	mmc-pwrseq = <&wifi_pwrseq>;
+	vmmc-supply = <&reg_vcc3v3>;
+	status = "okay";
+};
+
+/* eMMC */
+&mmc2 {
+	bus-width = <8>;
+	max-frequency = <200000000>;
+	cap-mmc-hw-reset;
+	mmc-hs200-1_8v;
+	non-removable;
+	disable-wp;
+	vmmc-supply = <&reg_vcc3v3>;
+	vqmmc-supply = <&reg_vcc1v8>;
+	status = "okay";
+};
+
+&pio {
+	vcc-pc-supply = <&reg_aldo1>;
+	vcc-pf-supply = <&reg_dldo1>;
+	vcc-pg-supply = <&reg_dldo1>;
+	vcc-ph-supply = <&reg_dldo1>;
+	vcc-pi-supply = <&reg_dldo1>;
+
+	/* Custom 8-bit eMMC pin configuration */
+	mmc2_pins: mmc2-pins {
+		pins = "PC1", "PC5", "PC6",
+		       "PC8", "PC9", "PC10", "PC11",
+		       "PC13", "PC14", "PC15", "PC16";
+		function = "mmc2";
+		drive-strength = <30>;
+		bias-pull-up;
+	};
+};
+
+&pwm {
+	status = "okay";
+};
+
+/* PWM5 output for AC200 2MHz clock */
+&pwm5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm5_pin>;
+	clk_bypass_output = <0x1>;
+	status = "okay";
+};
+
+/* PMIC: AXP313A */
+&r_i2c {
+	status = "okay";
+
+	axp313: pmic@36 {
+		compatible = "x-powers,axp313a";
+		reg = <0x36>;
+		#interrupt-cells = <1>;
+		interrupt-controller;
+		interrupt-parent = <&pio>;
+
+		vin1-supply = <&reg_vcc5v>;
+		vin2-supply = <&reg_vcc5v>;
+		vin3-supply = <&reg_vcc5v>;
+
+		regulators {
+			reg_aldo1: aldo1 {
+				regulator-always-on;
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-name = "vcc-1v8-pll";
+			};
+
+			reg_dldo1: dldo1 {
+				regulator-always-on;
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-name = "vcc-3v3-io";
+			};
+
+			reg_dcdc1: dcdc1 {
+				regulator-always-on;
+				regulator-min-microvolt = <810000>;
+				regulator-max-microvolt = <990000>;
+				regulator-name = "vdd-gpu-sys";
+			};
+
+			reg_dcdc2: dcdc2 {
+				regulator-always-on;
+				regulator-min-microvolt = <810000>;
+				regulator-max-microvolt = <1100000>;
+				regulator-name = "vdd-cpu";
+			};
+
+			reg_dcdc3: dcdc3 {
+				regulator-always-on;
+				regulator-min-microvolt = <1100000>;
+				regulator-max-microvolt = <1100000>;
+				regulator-name = "vdd-dram";
+			};
+		};
+	};
+};
+
+/* EPHY calibration data from SID */
+&sid {
+	ephy_calibration: ephy-calibration@2c {
+		reg = <0x2c 0x2>;
+	};
+};
+
+/* AC200 MFD: EPHY + calibration */
+&i2c3 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c3_pa_pins>;
+
+	ac200_x: mfd@10 {
+		compatible = "x-powers,ac200-sunxi";
+		reg = <0x10>;
+		clocks = <&ac200_pwm_clk>;
+		nvmem-cells = <&ephy_calibration>;
+		nvmem-cell-names = "calibration";
+
+		ac200_ephy: phy {
+			compatible = "x-powers,ac200-ephy-sunxi";
+			status = "okay";
+		};
+	};
+};
+
+/* Console UART on PH0/PH1 */
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_ph_pins>;
+	status = "okay";
+};
+
+&usbotg {
+	dr_mode = "peripheral";
+	status = "okay";
+};
+
+&usbphy {
+	status = "okay";
+};
